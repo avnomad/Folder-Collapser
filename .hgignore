@@ -2,3 +2,7 @@ syntax: regexp
 Debug/*
 Release/*
 ipch/*
+syntax: glob
+Folder Collapser.opensdf
+Folder Collapser.sdf
+Folder Collapser.suo
