@@ -9,41 +9,69 @@ using std::endl;
 
 #pragma warning(disable : 4996)
 
-int main()
-{
-	unsigned int l;
-	char tempFileName[L_tmpnam];
-	char dirCommand[1024] = "dir /s /a:-d-s /b >>";
-	char copyCommand[10240] = "copy \"";
-	FILE *tempFile;
+const unsigned int MAX_PATH_LENGTH = 10240;
+const unsigned int MAX_NAME_LENGTH = 1024;
 
-	l = strlen(copyCommand);
+int main()
+{	
+	char contentsListName[L_tmpnam];
+	char dirCommand[1024] = "dir /s /a:-d-s /b >>";
+
+	FILE *contentsList;
+	FILE *sourceFile;
+	FILE *destinationFile;
+
+	char sourceFileName[MAX_PATH_LENGTH];
+	char destinationFileName[MAX_NAME_LENGTH] = "c:\\collapseFolderTemporaryFolder\\";
+	const unsigned int l = strlen(destinationFileName);
+	char c;
+	char *p;
 
 		// create a file with the contents of the folder and it's subfolders.
-	tmpnam(tempFileName);	// create a name for a temporary file and save it in tempFileName.
-	strcat(dirCommand,tempFileName);	// complement the dirCommand whith the file name.
+	tmpnam(contentsListName);	// create a name for a temporary file and save it in contentsListName.
+	strcat(dirCommand,contentsListName);	// complement the dirCommand whith the file name.
 	system(dirCommand);	// send the command to the system.
 
 		// create destination folder.
 	system("md c:\\collapseFolderTemporaryFolder");
 
 		// copy the files
-	if(tempFile = fopen(tempFileName,"r"))	// if you can open the temporary file.
+	if(contentsList = fopen(contentsListName,"r"))	// if you can open the contentsList file.
 	{
-		while(fgets(&copyCommand[l],10240-l,tempFile))
+			// use the contentsList file.
+		while(fgets(sourceFileName,MAX_PATH_LENGTH,contentsList))	// for each file name in the list.
 		{
-			sprintf(&copyCommand[strlen(copyCommand)-1],"\" c:\\collapseFolderTemporaryFolder");
-			cout<<copyCommand<<endl;
-			system(copyCommand);
-		}
+			for(p = sourceFileName ; *p != '\n' ; ++p)	// find the end of the name.
+				;
+			*p = '\0';	// replace newline with null.
+			while(*--p != '\\')	// find the first backslash from the end.
+				;
+			++p;	// move to point to the start of the name.
+			strncpy(&destinationFileName[l],p,MAX_NAME_LENGTH-l);	// prepare the destination file name.
+			if(sourceFile = fopen(sourceFileName,"r"))
+			{
+				if(destinationFile = fopen(destinationFileName,"w"))
+				{
+					while((c = fgetc(sourceFile)) != EOF)	// for each character in source file.
+						fputc(c,destinationFile);	// copy it to destination file.
+					fclose(destinationFile);	// close destination file.
+				}
+				else
+					cerr<<"could not open file "<<destinationFileName<<" for writing."<<endl;	// notify for error.
+				fclose(sourceFile);	// close source file.
+			}
+			else
+				cerr<<"could not open file "<<sourceFileName<<" for reading."<<endl;	// notify for error.
+		} // end while
 
-		fclose(tempFile);
-		if(remove(tempFileName))
-			cerr<<"could not delete file "<<tempFileName<<"."<<endl;
+			// once you have finished using the contentsList file,
+		fclose(contentsList);	// close it
+		if(remove(contentsListName))	// and delete it.
+			cerr<<"could not delete file "<<contentsListName<<"."<<endl;	// notify on failure to delete.
 	}
-	else
-		cerr<<"could not open file "<<tempFileName<<"for reading."<<endl;
+	else	// if you can't open the contentsList file.
+		cerr<<"could not open file "<<contentsListName<<" for reading."<<endl;	// notify for error.
 
 	system("PAUSE");
 	return 0;
-}
+} // end function main
